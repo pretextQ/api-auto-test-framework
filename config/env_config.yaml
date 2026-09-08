@@ -1,0 +1,37 @@
+# 通用配置（所有环境共享）
+common:
+  timeout: 30
+  retries: 3
+  log_level: "INFO"
+
+# 环境配置
+environments:
+  dev:
+    base_url: "http://dev-api.example.com"
+    database:
+      host: "dev-mysql.example.com"
+      port: 3306
+      user: "${DB_USER}"
+      password: "${DB_PASSWORD}"
+      name: "dev_db"
+      charset: "utf8mb4"
+
+  test:
+    base_url: "http://test-api.example.com"
+    database:
+      host: "${DB_HOST}"
+      port: 3306
+      user: "${DB_USER}"
+      password: "${DB_PASSWORD}"
+      name: "${DB_NAME}"
+      charset: "utf8mb4"
+
+  prod:
+    base_url: "http://api.example.com"
+    database:
+      host: "prod-mysql.example.com"
+      port: 3306
+      user: "${DB_USER}"
+      password: "${DB_PASSWORD}"
+      name: "prod_db"
+      charset: "utf8mb4"

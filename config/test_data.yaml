@@ -1,0 +1,91 @@
+test_cases:
+  - case_id: "TC001"
+    name: "用户登录测试"
+    feature: "用户模块"
+    story: "用户登录"
+    request:
+      method: "POST"
+      url: "/api/login"
+      data:
+        username: "testuser"
+        password: "testpass"
+    expected:
+      status_code: 200
+    validation:
+      jsonpath:
+        expr: "$.data.token"
+        value: null
+      database:
+        table: "users"
+        conditions:
+          username: "testuser"
+        expected:
+          status: "active"
+
+  - case_id: "TC002"
+    name: "获取用户信息"
+    feature: "用户模块"
+    story: "用户信息"
+    request:
+      method: "GET"
+      url: "/api/users/1"
+    expected:
+      status_code: 200
+    validation:
+      jsonpath:
+        expr: "$.data.username"
+        value: "testuser"
+
+  - case_id: "TC003"
+    name: "创建订单"
+    feature: "订单模块"
+    story: "订单创建"
+    request:
+      method: "POST"
+      url: "/api/orders"
+      data:
+        user_id: "${user_id}"
+        product_id: 1001
+        quantity: 2
+    expected:
+      status_code: 200
+    validation:
+      jsonpath:
+        expr: "$.data.order_id"
+        value: null
+
+  - case_id: "TC004"
+    name: "查询订单列表"
+    feature: "订单模块"
+    story: "订单查询"
+    request:
+      method: "GET"
+      url: "/api/orders"
+      params:
+        user_id: "${user_id}"
+    expected:
+      status_code: 200
+    validation:
+      jsonpath:
+        expr: "$.data.total"
+        value: 1
+
+  - case_id: "TC005"
+    name: "商品库存校验"
+    feature: "商品模块"
+    story: "库存管理"
+    request:
+      method: "GET"
+      url: "/api/products/1001"
+    expected:
+      status_code: 200
+    validation:
+      jsonpath:
+        expr: "$.data.stock"
+        value: 100
+      database:
+        table: "products"
+        conditions:
+          id: 1001
+        expected:
+          status: "on_sale"
