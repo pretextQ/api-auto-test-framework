@@ -26,10 +26,12 @@ class HttpClient:
         if headers:
             self.session.headers.update(headers)
         
+        # 仅对幂等方法自动重试;POST 可能产生重复提交(如重复下单),不做重试
         retry_strategy = Retry(
             total=retries,
             backoff_factor=1,
-            status_forcelist=[500, 502, 503, 504]
+            status_forcelist=[500, 502, 503, 504],
+            allowed_methods=frozenset(["HEAD", "GET", "PUT", "DELETE", "OPTIONS"])
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)

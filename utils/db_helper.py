@@ -21,7 +21,7 @@ class DatabaseHelper:
         if self._connection is None or not self._connection.open:
             self._connection = pymysql.connect(
                 host=self.config.get("host"),
-                port=self.config.get("port", 3306),
+                port=int(self.config.get("port", 3306)),
                 user=self.config.get("user"),
                 password=self.config.get("password"),
                 database=self.config.get("name"),

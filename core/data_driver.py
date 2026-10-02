@@ -1,53 +1,29 @@
-import re
 import pytest
 from data.data_manager import DataManager
 
 
 class DataDriver:
-    """数据驱动模块：把YAML中的用例数据转换为pytest参数"""
+    """数据驱动模块:从YAML按模块加载用例并转换为pytest参数"""
 
     @classmethod
-    def parametrize(cls, data_file: str):
+    def parametrize(cls, data_file: str, feature: str = None, story: str = None):
         """
-        装饰器：从YAML读取全部用例并注入参数case
-        
+        装饰器:从YAML加载用例(可按 feature/story 过滤)并注入参数 case
+
+        过滤发生在用例收集阶段,而非运行时 skip,
+        保证每条测试方法只挂载属于自己的用例数据。
+
         Args:
             data_file: 数据文件路径
-            
-        用法：
-            @DataDriver.parametrize("config/test_data.yaml")
+            feature: 按模块过滤,为空时不过滤
+            story: 按故事过滤,为空时不过滤
+
+        用法:
+            @DataDriver.parametrize("config/test_data.yaml", feature="用户模块")
             def test_login(self, case): ...
         """
-        cases = DataManager(data_file).get_test_cases()
+        cases = DataManager(data_file).get_test_cases(feature=feature, story=story)
         return pytest.mark.parametrize(
             "case", cases,
             ids=[c["case_id"] for c in cases]
         )
-
-    @staticmethod
-    def render(value, context: dict):
-        """
-        递归渲染模板字符串，支持${key}与${context.key}
-        
-        Args:
-            value: 待渲染的值
-            context: 上下文字典
-            
-        Returns:
-            渲染后的值
-        """
-        if isinstance(value, str):
-            pattern = r'\$\{(\w+(?:\.\w+)*)\}'
-            
-            def replacer(match):
-                key = match.group(1)
-                if key.startswith("context."):
-                    key = key[8:]
-                return str(context.get(key, match.group(0)))
-            
-            return re.sub(pattern, replacer, value)
-        elif isinstance(value, dict):
-            return {k: DataDriver.render(v, context) for k, v in value.items()}
-        elif isinstance(value, list):
-            return [DataDriver.render(item, context) for item in value]
-        return value
