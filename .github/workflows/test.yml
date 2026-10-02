@@ -7,10 +7,29 @@ on:
     branches: [ main ]
   schedule:
     - cron: '0 8 * * 1-5'
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    services:
+      # 测试库:MySQL服务容器
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot_password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,18 +40,49 @@ jobs:
       - name: 安装依赖
         run: |
           pip install -U pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt -r demo_app/requirements.txt
 
-      - name: 运行测试
+      - name: 启动被测演示服务
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          DB_NAME: test_db
+        run: |
+          nohup python -m uvicorn demo_app.main:app --host 127.0.0.1 --port 8000 > demo_app.log 2>&1 &
+          sleep 2
+
+      - name: 等待演示服务就绪
+        run: |
+          python - <<'PYEOF'
+          import time
+          import requests
+
+          for _ in range(30):
+              try:
+                  if requests.get("http://127.0.0.1:8000/health", timeout=2).status_code == 200:
+                      print("演示服务已就绪")
+                      break
+              except Exception:
+                  time.sleep(2)
+          else:
+              raise SystemExit("演示服务启动失败")
+          PYEOF
+
+      - name: 运行测试(单元 + 冒烟)
         env:
           TEST_ENV: test
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_NAME: ${{ secrets.DB_NAME }}
+          API_BASE_URL: http://127.0.0.1:8000
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          DB_NAME: test_db
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
-        run: pytest --alluredir=reports/allure
+        run: >
+          pytest -m "unit or smoke" --alluredir=reports/allure
+          --cov=core --cov=data --cov=utils --cov-report=term-missing
 
       - name: 生成Allure报告
         uses: simple-elf/allure-report-action@master
@@ -40,7 +90,7 @@ jobs:
         with:
           allure_results: reports/allure
 
-      - name: 部署报告到Github Pages
+      - name: 部署报告到GitHub Pages
         if: always()
         uses: peaceiris/actions-gh-pages@v3
         with:

@@ -16,4 +16,4 @@ RUN mkdir -p reports/allure logs
 ENV PYTHONPATH=/app
 ENV TEST_ENV=test
 
-CMD ["pytest", "-m", "smoke"]
+CMD ["pytest", "-m", "unit or smoke"]
