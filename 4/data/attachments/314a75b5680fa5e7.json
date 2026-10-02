@@ -1,0 +1,9 @@
+{
+  "method": "POST",
+  "url": "/api/orders",
+  "data": {
+    "user_id": 1,
+    "product_id": 1002,
+    "quantity": 2
+  }
+}

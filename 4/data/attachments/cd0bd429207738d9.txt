@@ -1,0 +1,2 @@
+INFO     UserApi:http_client.py:61 [POST] http://127.0.0.1:8000/api/login
+INFO     UserApi:http_client.py:65 响应状态码: 200

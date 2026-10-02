@@ -1,0 +1,5 @@
+INFO     UserApi:http_client.py:61 [GET] http://127.0.0.1:8000/api/products/1001
+INFO     UserApi:http_client.py:65 响应状态码: 200
+DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.data.stock' 提取到 1 个结果
+DEBUG    DatabaseHelper:db_helper.py:48 执行SQL: SELECT * FROM products WHERE product_id = %s LIMIT 1, 参数: (1001,)
+DEBUG    DatabaseHelper:db_helper.py:51 查询返回 1 条记录

@@ -1,0 +1,8 @@
+{
+  "status_code": 200,
+  "body": {
+    "code": 1002,
+    "message": "账号已被禁用",
+    "data": null
+  }
+}
