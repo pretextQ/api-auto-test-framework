@@ -1,37 +1,30 @@
-# 通用配置（所有环境共享）
+# 通用配置(所有环境共享)
 common:
   timeout: 30
   retries: 3
   log_level: "INFO"
 
 # 环境配置
+# 占位符语法: ${ENV_VAR:默认值},环境变量未设置时使用冒号后的默认值
+# 被测服务为本仓库内置的 demo_app(FastAPI),随 docker-compose 一键拉起
 environments:
-  dev:
-    base_url: "http://dev-api.example.com"
-    database:
-      host: "dev-mysql.example.com"
-      port: 3306
-      user: "${DB_USER}"
-      password: "${DB_PASSWORD}"
-      name: "dev_db"
-      charset: "utf8mb4"
-
   test:
-    base_url: "http://test-api.example.com"
+    base_url: "${API_BASE_URL:http://localhost:8000}"
     database:
-      host: "${DB_HOST}"
-      port: 3306
-      user: "${DB_USER}"
-      password: "${DB_PASSWORD}"
-      name: "${DB_NAME}"
+      host: "${DB_HOST:localhost}"
+      # docker-compose将容器MySQL映射到宿主机3307(避免与本机MySQL的3306冲突)
+      port: "${DB_PORT:3307}"
+      user: "${DB_USER:test_user}"
+      password: "${DB_PASSWORD:test_password}"
+      name: "${DB_NAME:test_db}"
       charset: "utf8mb4"
 
-  prod:
-    base_url: "http://api.example.com"
+  dev:
+    base_url: "${API_BASE_URL:http://localhost:8000}"
     database:
-      host: "prod-mysql.example.com"
-      port: 3306
-      user: "${DB_USER}"
-      password: "${DB_PASSWORD}"
-      name: "prod_db"
+      host: "${DB_HOST:localhost}"
+      port: "${DB_PORT:3307}"
+      user: "${DB_USER:test_user}"
+      password: "${DB_PASSWORD:test_password}"
+      name: "${DB_NAME:test_db}"
       charset: "utf8mb4"

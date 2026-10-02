@@ -1,21 +1,23 @@
-version: '3.8'
-
 services:
-  test-runner:
-    build: .
-    volumes:
-      - ./reports:/app/reports
-      - ./logs:/app/logs
+  # 被测演示服务(FastAPI)
+  demo-app:
+    build: ./demo_app
     environment:
-      - TEST_ENV=${TEST_ENV:-test}
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USER=test_user
       - DB_PASSWORD=test_password
       - DB_NAME=test_db
-      - FEISHU_WEBHOOK=${FEISHU_WEBHOOK}
+    ports:
+      - "8000:8000"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     networks: [test-network]
 
   mysql:
@@ -25,9 +27,36 @@ services:
       - MYSQL_DATABASE=test_db
       - MYSQL_USER=test_user
       - MYSQL_PASSWORD=test_password
-    ports: ["3306:3306"]
+    ports:
+      # 映射到宿主机3307,避免与本机已有MySQL(3306)冲突
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks: [test-network]
+
+  # 自动化测试执行器
+  test-runner:
+    build: .
+    volumes:
+      - ./reports:/app/reports
+      - ./logs:/app/logs
+    environment:
+      - TEST_ENV=test
+      - API_BASE_URL=http://demo-app:8000
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=test_user
+      - DB_PASSWORD=test_password
+      - DB_NAME=test_db
+      - FEISHU_WEBHOOK=${FEISHU_WEBHOOK}
+    depends_on:
+      demo-app:
+        condition: service_healthy
     networks: [test-network]
 
 volumes:
