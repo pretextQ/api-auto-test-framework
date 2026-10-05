@@ -1,0 +1,12 @@
+{
+  "status_code": 200,
+  "body": {
+    "code": 0,
+    "message": "success",
+    "data": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE3OTEyMjMzMjl9.xp6esnt5tBtuoZxJ2M_mLwWgksckwVW0r2AD5o6s5c4",
+      "user_id": 1,
+      "username": "testuser"
+    }
+  }
+}
