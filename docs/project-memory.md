@@ -1,303 +1,167 @@
-# 项目记忆文档
+# 项目维护手册
 
-**创建日期**：2026-09-08  
-**最后更新**：2026-09-08  
-**项目名称**：基于Pytest的微服务接口自动化测试框架
+> 最后更新：2026-10-07
+>
+> 适用分支：`main`
 
----
+本文档面向后续维护者，记录项目当前事实、关键约定和变更检查项。它不是需求草稿；历史规划与后续工作见[升级路线图](升级计划书.md)。
 
-## 1. 项目背景与需求
+## 1. 项目定位
 
-### 1.1 原始需求
-用户有一个项目描述文档（项目.md），描述了一个基于Pytest的微服务接口自动化测试框架，但没有实际代码。用户希望根据这个项目描述来完成代码编写。
+这是一个可独立运行的接口自动化测试示例项目，目标是演示一条完整而可验证的工程链路：
 
-### 1.2 项目目标
-- 创建一个完整的接口自动化测试框架
-- 用于简历项目展示，重点在代码质量和架构设计
-- 技术栈：Python + Pytest + Requests + YAML + JSONPath + MySQL + Allure + 飞书通知 + Docker
-
----
-
-## 2. 用户偏好与选择
-
-### 2.1 使用场景
-**选择**：简历项目展示  
-**重点**：代码质量和架构设计
-
-### 2.2 技术背景
-**水平**：有基础  
-**需求**：清晰的架构指导
-
-### 2.3 复杂度偏好
-**选择**：简洁实用  
-**要求**：核心功能完整，代码量适中，易于理解和维护
-
-### 2.4 数据管理方式
-**选择**：YAML文件  
-**原因**：简单直观，易于维护
-
-### 2.5 报告展示方式
-**选择**：Allure报告  
-**原因**：提供详细的测试报告，包含图表、日志、附件等
-
-### 2.6 通知方式
-**选择**：飞书通知  
-**状态**：用户已有飞书机器人的Webhook地址
-
----
-
-## 3. 架构设计决策
-
-### 3.1 方案选择
-**选择**：方案1 - 标准分层架构  
-**原因**：
-- 平衡了架构复杂度和展示价值
-- 清晰的层次结构便于面试讲解
-- 代码量适中，不会显得过于简单或复杂
-
-### 3.2 架构层次
-1. **API封装层**：封装HTTP请求，提供统一的接口调用方式
-2. **核心业务层**：实现测试逻辑、数据驱动、参数处理等核心功能
-3. **数据管理层**：管理测试数据、配置数据、环境数据
-4. **工具类层**：提供通用工具函数，如JSONPath提取、数据库操作等
-
-### 3.3 设计原则
-- 单一职责：每个模块只负责一个功能
-- 依赖倒置：高层模块不依赖低层模块
-- 接口隔离：通过抽象接口解耦模块
-- 开闭原则：对扩展开放，对修改关闭
-
----
-
-## 4. 技术选型确认
-
-### 4.1 核心技术栈
-- **编程语言**：Python 3.8+
-- **测试框架**：Pytest
-- **HTTP客户端**：Requests
-- **数据驱动**：YAML
-- **数据提取**：JSONPath
-- **数据库**：MySQL
-- **测试报告**：Allure
-- **消息通知**：飞书机器人
-- **容器化**：Docker
-- **CI/CD**：Jenkins/GitHub Actions
-
-### 4.2 项目规模预估
-- 预计代码量：800-1000行
-- 核心模块：8个
-- 测试用例示例：5-10个
-- 配置文件：5-8个
-
----
-
-## 5. 模块设计确认
-
-### 5.1 API封装层
-- **HttpClient类**：HTTP客户端基类，管理会话、请求头、鉴权、超时、重试
-- **ApiBase类**：API基类，提供业务相关的API封装方法
-
-### 5.2 核心业务层
-- **数据驱动模块**：YAML数据加载、模板渲染、参数化测试
-- **上下文管理模块**：Pytest Fixture管理、动态参数处理、接口间数据传递
-- **测试用例基类**：通用测试前置/后置处理、断言封装
-
-### 5.3 数据管理层
-- **配置管理模块**：环境配置加载、配置文件解析
-- **测试数据模块**：YAML数据文件加载、数据验证
-- **数据库管理模块**：MySQL连接管理、SQL执行器、数据验证器
-
-### 5.4 工具类层
-- **JSONPath工具**：JSONPath表达式解析、数据提取与验证
-- **数据库工具**：MySQL连接管理、SQL执行与查询、数据验证与断言
-- **日志工具**：统一日志格式、日志级别管理、日志文件输出
-- **报告工具**：Allure报告集成、测试步骤记录、附件管理
-
-### 5.5 飞书通知模块
-- **FeishuNotifier类**：飞书机器人Webhook集成、测试结果消息格式化、失败用例详细信息、异常信息推送
-
----
-
-## 6. 配置文件设计确认
-
-### 6.1 环境配置文件
-- 文件路径：config/env_config.yaml
-- 内容：多环境配置（dev、test、prod）、通用配置
-
-### 6.2 测试数据文件
-- 文件路径：config/test_data.yaml
-- 内容：测试用例数据，包含请求、预期结果、验证规则
-
-### 6.3 数据库配置文件
-- 文件路径：config/db_config.yaml
-- 内容：数据库连接配置，支持环境变量注入
-
-### 6.4 Pytest配置文件
-- 文件路径：pytest.ini
-- 内容：测试路径、文件命名规则、报告配置、标记定义
-
-### 6.5 Python依赖文件
-- 文件路径：requirements.txt
-- 内容：所有Python依赖包及版本
-
----
-
-## 7. 测试用例设计确认
-
-### 7.1 组织结构
-- 按业务模块组织测试用例
-- 每个模块一个测试文件
-- 使用conftest.py管理公共fixture
-
-### 7.2 编写规范
-- 使用YAML数据驱动
-- 清晰的测试步骤
-- 完整的断言验证
-- 支持Allure报告集成
-
-### 7.3 公共Fixture
-- config：配置fixture
-- api_client：API客户端fixture
-- test_context：测试上下文fixture
-- test_data：测试数据fixture
-
----
-
-## 8. 部署与配置确认
-
-### 8.1 Docker配置
-- Dockerfile：基于Python 3.9-slim，安装依赖，运行测试
-- docker-compose.yml：包含test-runner、mysql、allure三个服务
-
-### 8.2 CI/CD集成
-- GitHub Actions配置
-- 支持push、pull_request、定时执行
-- 集成Allure报告生成和部署
-
----
-
-## 9. 项目文件结构
-
-```
-testai/
-├── api/                    # API封装层
-│   ├── __init__.py
-│   ├── http_client.py      # HTTP客户端基类
-│   └── api_base.py         # API基类
-├── core/                   # 核心业务层
-│   ├── __init__.py
-│   ├── data_driver.py      # 数据驱动模块
-│   ├── context_manager.py  # 上下文管理模块
-│   └── test_case_base.py   # 测试用例基类
-├── data/                   # 数据管理层
-│   ├── __init__.py
-│   ├── config_manager.py   # 配置管理模块
-│   ├── data_manager.py     # 测试数据模块
-│   └── db_manager.py       # 数据库管理模块
-├── utils/                  # 工具类层
-│   ├── __init__.py
-│   ├── jsonpath_extractor.py # JSONPath工具
-│   ├── db_helper.py        # 数据库工具
-│   ├── logger.py           # 日志工具
-│   └── reporter.py         # 报告工具
-├── config/                 # 配置目录
-│   ├── env_config.yaml     # 环境配置
-│   ├── test_data.yaml      # 测试数据
-│   └── db_config.yaml      # 数据库配置
-├── testcases/              # 测试用例目录
-│   ├── conftest.py         # 公共fixture
-│   ├── test_user.py        # 用户模块测试
-│   └── test_order.py       # 订单模块测试
-├── reports/                # 测试报告目录
-├── logs/                   # 日志目录
-├── docs/                   # 项目文档
-│   ├── superpowers/
-│   │   └── specs/          # 设计文档
-│   └── project-memory.md   # 项目记忆文档
-├── requirements.txt        # Python依赖
-├── pytest.ini             # Pytest配置
-├── conftest.py            # 全局fixture
-├── Dockerfile             # Docker配置
-├── docker-compose.yml     # Docker Compose配置
-└── README.md              # 项目说明
+```text
+YAML 用例 → Pytest 参数化 → HTTP 请求 → 响应/业务码断言
+                               └→ MySQL 落库断言
+测试结果 → Allure 报告 → GitHub Pages / 飞书通知
 ```
 
----
+仓库同时包含测试框架和被测演示服务。演示服务用于保证项目可以复现，不代表生产业务系统的完整安全设计。
 
-## 10. 实施计划
+## 2. 当前技术基线
 
-### 10.1 第一阶段：搭建项目结构，实现核心框架
-- 创建项目目录结构
-- 实现API封装层
-- 实现数据管理层
+| 领域 | 实现 |
+|------|------|
+| 语言与测试 | Python 3.9+、Pytest |
+| HTTP | Requests、Session、幂等请求重试 |
+| 数据驱动 | YAML、收集阶段参数化 |
+| 数据提取 | jsonpath-ng |
+| 数据库 | MySQL 8、PyMySQL |
+| 被测服务 | FastAPI、JWT |
+| 报告与通知 | Allure、飞书群机器人 |
+| 工程化 | Docker Compose、GitHub Actions |
 
-### 10.2 第二阶段：实现核心业务层和工具类层
-- 实现数据驱动模块
-- 实现上下文管理模块
-- 实现JSONPath工具
-- 实现数据库工具
+当前仓库包含 6 条 YAML 数据用例、1 条 API 对象层用例和 41 条框架单元测试。
 
-### 10.3 第三阶段：编写测试用例，集成报告和通知
-- 编写测试用例示例
-- 集成Allure报告
-- 集成飞书通知
+## 3. 目录职责
 
-### 10.4 第四阶段：Docker容器化，CI/CD集成
-- 编写Docker配置
-- 配置CI/CD流水线
-- 完善项目文档
+```text
+api/             HTTP 客户端与业务 API 对象
+core/            数据驱动、上下文和统一用例执行流程
+data/            环境配置与 YAML 用例加载
+utils/           JSONPath、数据库、日志、报告和通知工具
+testcases/       需要演示服务与 MySQL 的冒烟测试
+unit_tests/      不依赖外部服务的框架单元测试
+config/          环境配置和测试数据
+demo_app/        FastAPI 被测演示服务
+docs/            设计、维护与路线图文档
+```
 
----
+数据库配置统一位于 `config/env_config.yaml`，项目不存在独立的 `db_config.yaml`。测试用例文件按业务模块拆分，文件名前缀只用于保持默认展示顺序，不应作为依赖管理机制。
 
-## 11. 待办事项
+## 4. 核心执行链路
 
-- [ ] 创建项目目录结构
-- [ ] 实现API封装层（HttpClient、ApiBase）
-- [ ] 实现数据管理层（ConfigManager、DataManager、DatabaseManager）
-- [ ] 实现核心业务层（DataDriver、TestContext、TestCaseBase）
-- [ ] 实现工具类层（JsonPathExtractor、DatabaseHelper、Logger、Reporter）
-- [ ] 实现飞书通知模块（FeishuNotifier）
-- [ ] 编写配置文件（env_config.yaml、test_data.yaml、db_config.yaml、pytest.ini、requirements.txt）
-- [ ] 编写测试用例示例
-- [ ] 编写Docker配置（Dockerfile、docker-compose.yml）
-- [ ] 编写CI/CD配置（GitHub Actions）
-- [ ] 编写项目文档（README.md）
+1. `DataDriver.parametrize` 在测试收集阶段读取并过滤 YAML 用例。
+2. `TestCaseBase.perform_request` 用 `TestContext` 渲染请求中的占位符。
+3. `HttpClient` 发送请求，并统一应用超时和幂等方法重试策略。
+4. `TestCaseBase.run_data_driven_case` 依次执行 HTTP 状态码、业务码、JSONPath 和数据库断言。
+5. 成功响应可通过 `extract` 把字段写入链路上下文，供后续请求引用。
+6. Pytest 会话结束后生成 Allure 结果，并在配置 Webhook 时发送飞书通知。
 
----
+占位符支持 `${key}` 与 `${context.key}`。当整个字符串只有一个占位符时，渲染结果保留原始类型；嵌入普通字符串时转换为文本。
 
-## 12. 注意事项
+## 5. 配置约定
 
-### 12.1 代码质量
-- 清晰的代码结构和命名
-- 适当的注释和文档
-- 遵循Python最佳实践
+环境由 `--env` 或 `TEST_ENV` 选择，默认值为 `test`：
 
-### 12.2 架构设计
-- 保持模块间的低耦合
-- 接口设计要清晰
-- 易于扩展和维护
+```powershell
+pytest --env=test
+$env:TEST_ENV = "dev"
+pytest
+```
 
-### 12.3 简历展示
-- 突出技术亮点
-- 展示架构设计能力
-- 体现工程化思维
+连接信息优先从环境变量读取：
 
----
+| 变量 | 默认值 | 用途 |
+|------|--------|------|
+| `API_BASE_URL` | `http://localhost:8000` | 被测服务地址 |
+| `DB_HOST` | `localhost` | MySQL 主机 |
+| `DB_PORT` | `3307` | 宿主机 MySQL 端口 |
+| `DB_USER` | `test_user` | 数据库用户 |
+| `DB_PASSWORD` | `test_password` | 数据库密码 |
+| `DB_NAME` | `test_db` | 数据库名称 |
+| `FEISHU_WEBHOOK` | 空 | 飞书机器人地址；为空时不通知 |
 
-## 13. 参考资源
+默认凭据只服务于本地演示，不应用于共享或生产环境。
 
-### 13.1 官方文档
-- Pytest官方文档：https://docs.pytest.org/
-- Requests官方文档：https://requests.readthedocs.io/
-- Allure官方文档：https://docs.qameta.io/allure/
-- JSONPath官方文档：https://goessner.net/articles/JsonPath/
-- 飞书机器人文档：https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot
+## 6. 常用维护命令
 
-### 13.2 设计文档
-- 详细设计文档：docs/superpowers/specs/2026-09-08-test-framework-design.md
+```powershell
+# 仅运行无外部依赖的单元测试
+pytest -m unit
 
----
+# 启动被测服务和数据库
+docker compose up -d --build mysql demo-app
 
-## 14. 版本历史
+# 运行冒烟链路
+pytest -m smoke
 
-- **v1.0**（2026-09-08）：创建项目记忆文档，记录所有讨论内容和设计决策
+# 运行全部测试并输出覆盖率
+pytest -m "unit or smoke" --cov=core --cov=data --cov=utils --cov-report=term-missing
+
+# 在容器中执行测试
+docker compose run --rm test-runner
+```
+
+PowerShell 中建议使用 `$env:NAME = "value"` 设置临时环境变量。CI 使用 Linux shell，环境变量语法不同。
+
+## 7. 修改检查清单
+
+### 新增接口
+
+- 在 `demo_app/` 或真实被测服务中明确鉴权和业务错误语义；
+- 需要流程编排时在 `api/` 增加业务 API 对象；
+- 在 YAML 中增加成功、参数错误和权限错误用例；
+- 对状态变化同时增加响应断言和数据库断言；
+- 检查请求与响应附件是否包含密码、Token 或个人数据。
+
+### 新增 YAML 字段
+
+- 更新 `DataManager` 的结构校验；
+- 更新 `TestCaseBase` 的执行逻辑；
+- 增加单元测试，至少覆盖正常值、缺失值和非法值；
+- 同步更新设计说明中的用例模型。
+
+### 修改配置
+
+- 保持本地、Docker Compose 和 GitHub Actions 三种运行方式一致；
+- 不在仓库中提交真实凭据；
+- 新环境必须显式配置，禁止默认连接生产环境。
+
+### 提交前
+
+```powershell
+pytest -m unit
+python -m compileall -q api core data demo_app testcases unit_tests utils
+git diff --check
+```
+
+涉及服务、数据库或工作流的变更，还必须运行冒烟测试。
+
+## 8. 当前已知边界
+
+- 订单链路目前使用会话级上下文，查询订单用例依赖前置下单结果；单独执行或并行执行的隔离能力仍需改进。
+- 演示服务的鉴权、库存并发控制和密码存储仅满足演示用途，不能直接作为生产实现。
+- 请求与响应会写入 Allure 附件，接入真实系统前必须增加敏感字段脱敏。
+- 飞书通知需要把 Pytest 的 setup/teardown error 纳入失败状态，避免误报成功。
+- 依赖目前使用最低版本约束，尚未提供锁文件或可复现依赖快照。
+
+这些事项的优先级和验收条件记录在[升级路线图](升级计划书.md)。
+
+## 9. 关键设计决策
+
+| 决策 | 原因 |
+|------|------|
+| POST 默认不重试 | 避免创建订单等非幂等操作重复执行 |
+| YAML 在收集阶段过滤 | 避免先生成全部组合再运行时跳过 |
+| API 对象与数据驱动并存 | 分别承载流程编排和参数覆盖 |
+| 数据库配置并入环境配置 | 避免多份配置漂移 |
+| 内置演示服务 | 让仓库不依赖不可控的外部 API |
+| 不提供生产环境默认配置 | 降低误连生产环境的风险 |
+
+## 10. 文档维护规则
+
+- 根目录 `README.md` 只保留用户首次运行所需内容；
+- 设计变化写入设计说明，运维约定写入本文档，未来事项写入升级路线图；
+- 文档中只陈述仓库能够验证的数字与能力；
+- 规划项必须使用“计划”“待完成”等明确措辞，不得写成已实现能力。
