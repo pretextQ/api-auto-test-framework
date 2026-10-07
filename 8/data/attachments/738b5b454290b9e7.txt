@@ -1,0 +1,3 @@
+DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.data.user.id' 提取到 1 个结果
+DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.data.user.id' 提取到 1 个结果
+INFO     DatabaseHelper:db_helper.py:125 数据库连接已关闭

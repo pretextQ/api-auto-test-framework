@@ -1,0 +1,2 @@
+2026-10-07 07:54:27 - ConfigManager - WARNING - 环境变量 TEST_PASSWORD 未设置且无默认值
+2026-10-07 07:54:27 - ConfigManager - INFO - 已加载环境配置: test

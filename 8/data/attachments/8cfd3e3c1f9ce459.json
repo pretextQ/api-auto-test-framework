@@ -1,0 +1,8 @@
+{
+  "method": "POST",
+  "url": "/api/login",
+  "data": {
+    "username": "testuser",
+    "password": "wrongpass"
+  }
+}

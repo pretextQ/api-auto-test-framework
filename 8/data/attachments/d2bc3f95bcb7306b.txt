@@ -1,0 +1,3 @@
+INFO     UserApi:http_client.py:61 [GET] http://127.0.0.1:8000/api/orders
+INFO     UserApi:http_client.py:65 响应状态码: 200
+DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.data.total' 提取到 1 个结果

@@ -1,0 +1,19 @@
+{
+  "status_code": 200,
+  "body": {
+    "code": 0,
+    "message": "success",
+    "data": {
+      "total": 1,
+      "items": [
+        {
+          "order_id": 1,
+          "product_id": 1002,
+          "quantity": 2,
+          "amount": 158.0,
+          "status": "created"
+        }
+      ]
+    }
+  }
+}

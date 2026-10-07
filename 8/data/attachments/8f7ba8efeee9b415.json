@@ -1,0 +1,7 @@
+{
+  "method": "GET",
+  "url": "/api/orders",
+  "params": {
+    "user_id": 1
+  }
+}

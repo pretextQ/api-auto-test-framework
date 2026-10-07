@@ -1,0 +1,3 @@
+INFO     DatabaseHelper:db_helper.py:31 数据库连接已建立
+DEBUG    DatabaseHelper:db_helper.py:48 执行SQL: SELECT * FROM orders WHERE user_id = %s AND status = %s LIMIT 1, 参数: (1, 'created')
+DEBUG    DatabaseHelper:db_helper.py:51 查询返回 0 条记录
