@@ -1,3 +1,0 @@
-INFO     DatabaseHelper:db_helper.py:49 数据库连接已建立
-DEBUG    DatabaseHelper:db_helper.py:97 执行SQL: UPDATE x SET y = 1, 参数: ()
-ERROR    DatabaseHelper:db_helper.py:104 更新失败: db down

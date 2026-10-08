@@ -1,5 +1,0 @@
-INFO     UserApi:http_client.py:66 [GET] http://127.0.0.1:8000/api/users/1
-INFO     UserApi:http_client.py:70 响应状态码: 200
-DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.username' 提取到 1 个结果
-DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.user_id' 提取到 1 个结果
-DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.status' 提取到 1 个结果
