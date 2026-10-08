@@ -14,7 +14,31 @@ permissions:
   contents: write
 
 jobs:
+  unit:
+    name: 单元测试 (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.11']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 安装锁定依赖
+        run: |
+          pip install -U pip
+          pip install -c constraints.txt -r requirements.txt -r demo_app/requirements.txt
+
+      - name: 运行框架单元测试
+        run: pytest unit_tests -m unit -q
+
   test:
+    name: 集成与报告
     runs-on: ubuntu-latest
 
     services:
@@ -44,7 +68,7 @@ jobs:
       - name: 安装依赖
         run: |
           pip install -U pip
-          pip install -r requirements.txt -r demo_app/requirements.txt
+          pip install -c constraints.txt -r requirements.txt -r demo_app/requirements.txt
 
       - name: 启动被测演示服务
         env:
@@ -83,7 +107,11 @@ jobs:
           DB_USER: test_user
           DB_PASSWORD: test_password
           DB_NAME: test_db
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-demo-secret-key-change-me-32-bytes' }}
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
+          CI_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ALLURE_REPORT_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
         run: >
           pytest -m "unit or smoke" --alluredir=reports/allure
           --cov=core --cov=data --cov=utils --cov-report=term-missing

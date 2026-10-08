@@ -1,5 +1,7 @@
 """演示服务接口层:统一响应包 {code, message, data},业务错误 code != 0 且 HTTP 状态码为 200"""
+import os
 import time
+from contextlib import asynccontextmanager
 from typing import Optional
 
 import jwt
@@ -9,15 +11,21 @@ from pydantic import BaseModel
 
 from demo_app import database
 
-JWT_SECRET = "demo-secret"
+JWT_SECRET = os.getenv("JWT_SECRET", "demo-only-secret-key-change-me-32-bytes")
 TOKEN_EXPIRE_SECONDS = 3600
 
-app = FastAPI(title="Demo API", description="接口自动化测试框架的被测演示服务")
 
-
-@app.on_event("startup")
-def startup():
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
     database.wait_and_init()
+    yield
+
+
+app = FastAPI(
+    title="Demo API",
+    description="接口自动化测试框架的被测演示服务",
+    lifespan=lifespan,
+)
 
 
 def ok(data=None):
@@ -39,7 +47,8 @@ class UpdateUserRequest(BaseModel):
 
 
 class OrderRequest(BaseModel):
-    user_id: int
+    # 兼容旧客户端；服务端始终以 Token 主体为准，并拒绝不一致的值。
+    user_id: Optional[int] = None
     product_id: int
     quantity: int
 
@@ -90,6 +99,8 @@ def get_user(user_id: int, request: Request):
     uid = current_user_id(request)
     if uid is None:
         return fail(401, "未登录或凭证已过期")
+    if uid != user_id:
+        return fail(403, "无权查看他人信息")
 
     conn = database.get_connection()
     try:
@@ -160,6 +171,8 @@ def create_order(payload: OrderRequest, request: Request):
     uid = current_user_id(request)
     if uid is None:
         return fail(401, "未登录或凭证已过期")
+    if payload.user_id is not None and payload.user_id != uid:
+        return fail(403, "无权为他人创建订单")
     if payload.quantity < 1:
         return fail(3002, "购买数量不合法")
 
@@ -174,18 +187,22 @@ def create_order(payload: OrderRequest, request: Request):
             if product["status"] != "on_sale":
                 conn.rollback()
                 return fail(3004, "商品已下架")
-            if product["stock"] < payload.quantity:
+            # 条件更新在数据库内原子校验并扣减库存，避免并发请求同时通过旧库存判断。
+            affected = cursor.execute(
+                "UPDATE products SET stock = stock - %s "
+                "WHERE product_id = %s AND status = %s AND stock >= %s",
+                (payload.quantity, payload.product_id, "on_sale", payload.quantity),
+            )
+            if affected != 1:
                 conn.rollback()
                 return fail(3005, "库存不足")
 
-            amount = float(product["price"]) * payload.quantity
+            amount = product["price"] * payload.quantity
             cursor.execute(
                 "INSERT INTO orders (user_id, product_id, quantity, amount, status) VALUES (%s, %s, %s, %s, %s)",
-                (payload.user_id, payload.product_id, payload.quantity, amount, "created"),
+                (uid, payload.product_id, payload.quantity, amount, "created"),
             )
             order_id = cursor.lastrowid
-            cursor.execute("UPDATE products SET stock = stock - %s WHERE product_id = %s",
-                           (payload.quantity, payload.product_id))
         conn.commit()
     except Exception:
         conn.rollback()
@@ -194,7 +211,7 @@ def create_order(payload: OrderRequest, request: Request):
         conn.close()
 
     return ok({"order_id": order_id, "product_id": payload.product_id,
-               "quantity": payload.quantity, "amount": amount, "status": "created"})
+               "quantity": payload.quantity, "amount": float(amount), "status": "created"})
 
 
 @app.get("/api/orders")

@@ -25,8 +25,8 @@
 
 - Python 3.9+，测试框架为 Pytest；
 - FastAPI 演示服务和 MySQL 组成可本地复现的被测系统；
-- 6 条 YAML 数据用例，加 1 条 API 对象层用例；
-- 41 条框架单元测试；
+- 6 条 YAML 数据用例，加 4 条 API 对象/安全边界用例；
+- 72 条框架单元测试；
 - 支持 JSONPath、业务码和数据库断言；
 - 支持 Docker Compose、GitHub Actions、Allure 和飞书通知。
 

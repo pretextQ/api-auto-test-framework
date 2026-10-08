@@ -1,6 +1,7 @@
 import pytest
 
 from core.context_manager import TestContext
+from utils.exceptions import ContextVariableError
 
 pytestmark = pytest.mark.unit
 
@@ -29,9 +30,10 @@ class TestRender:
         """支持${context.key}写法"""
         assert context.render("${context.user_id}") == 1001
 
-    def test_missing_placeholder_kept_as_is(self, context):
-        """未命中的占位符原样保留"""
-        assert context.render("${missing}") == "${missing}"
+    def test_missing_placeholder_raises(self, context):
+        """未命中的占位符快速失败"""
+        with pytest.raises(ContextVariableError, match="missing"):
+            context.render("${missing}")
 
     def test_dict_rendered_recursively(self, context):
         data = context.render({"a": "${user_id}", "b": ["${token}", "x"]})
@@ -53,4 +55,5 @@ class TestGetSet:
     def test_clear_empties_context(self, context):
         context.clear()
         assert context.get("user_id") is None
-        assert context.render("${user_id}") == "${user_id}"
+        with pytest.raises(ContextVariableError):
+            context.render("${user_id}")

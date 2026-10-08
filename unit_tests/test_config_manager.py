@@ -7,11 +7,16 @@ pytestmark = pytest.mark.unit
 CONFIG_YAML = """
 common:
   timeout: 10
+  reporting:
+    enabled: true
+    sensitive_fields: ["${CUSTOM_FIELD:id_card}"]
 environments:
   test:
     base_url: "http://localhost:8000"
     token: "${TEST_TOKEN:default-token}"
     password: "${TEST_PASSWORD}"
+    reporting:
+      enabled: false
   prod:
     base_url: "http://prod.example.com"
 """
@@ -59,3 +64,15 @@ class TestConfigManager:
 
     def test_current_env_recorded(self, config_file):
         assert ConfigManager(env="prod", config_path=config_file).current_env == "prod"
+
+    def test_nested_config_is_deep_merged(self, config_file):
+        cfg = ConfigManager(env="test", config_path=config_file)
+        assert cfg.get("reporting.enabled") is False
+        assert cfg.get("reporting.sensitive_fields") == ["id_card"]
+
+    def test_environment_variables_inside_lists_are_resolved(
+        self, config_file, monkeypatch
+    ):
+        monkeypatch.setenv("CUSTOM_FIELD", "customer_secret")
+        cfg = ConfigManager(env="test", config_path=config_file)
+        assert cfg.get("reporting.sensitive_fields") == ["customer_secret"]

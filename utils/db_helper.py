@@ -1,5 +1,10 @@
+import re
+
 import pymysql
 from utils.logger import Logger
+
+
+IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 class DatabaseHelper:
@@ -18,6 +23,19 @@ class DatabaseHelper:
 
     def _get_connection(self):
         """获取数据库连接（惰性创建）"""
+        if self._connection is not None and self._connection.open:
+            try:
+                if hasattr(self._connection, "ping"):
+                    self._connection.ping()
+                return self._connection
+            except Exception:
+                self.logger.warning("数据库连接已失效，正在重连")
+                try:
+                    self._connection.close()
+                except Exception:
+                    pass
+                self._connection = None
+
         if self._connection is None or not self._connection.open:
             self._connection = pymysql.connect(
                 host=self.config.get("host"),
@@ -30,6 +48,11 @@ class DatabaseHelper:
             )
             self.logger.info("数据库连接已建立")
         return self._connection
+
+    @staticmethod
+    def _validate_identifier(identifier: str, kind: str):
+        if not isinstance(identifier, str) or not IDENTIFIER_PATTERN.fullmatch(identifier):
+            raise ValueError(f"非法{kind}: {identifier!r}")
 
     def execute_query(self, sql: str, params: tuple = ()) -> list:
         """
@@ -48,9 +71,12 @@ class DatabaseHelper:
                 self.logger.debug(f"执行SQL: {sql}, 参数: {params}")
                 cursor.execute(sql, params)
                 results = cursor.fetchall()
+                # 结束MySQL默认Repeatable Read下的只读事务，确保下一次查询看到最新提交。
+                conn.commit()
                 self.logger.debug(f"查询返回 {len(results)} 条记录")
                 return results
         except Exception as e:
+            conn.rollback()
             self.logger.error(f"查询失败: {e}")
             raise
 
@@ -89,6 +115,12 @@ class DatabaseHelper:
         Returns:
             记录字典或None
         """
+        self._validate_identifier(table, "表名")
+        if not isinstance(conditions, dict) or not conditions:
+            raise ValueError("conditions 必须是非空对象")
+        for column in conditions:
+            self._validate_identifier(column, "列名")
+
         where_parts = [f"{k} = %s" for k in conditions.keys()]
         where_clause = " AND ".join(where_parts)
         sql = f"SELECT * FROM {table} WHERE {where_clause} LIMIT 1"
@@ -109,11 +141,14 @@ class DatabaseHelper:
         Returns:
             是否一致
         """
+        if not isinstance(expected, dict) or not expected:
+            raise ValueError("expected 必须是非空对象")
         actual = self.fetch_one(table, conditions)
         if actual is None:
             return False
-        
+
         for key, expected_value in expected.items():
+            self._validate_identifier(key, "列名")
             if actual.get(key) != expected_value:
                 return False
         return True

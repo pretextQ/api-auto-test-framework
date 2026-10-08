@@ -3,6 +3,9 @@ common:
   timeout: 30
   retries: 3
   log_level: "INFO"
+  reporting:
+    # 除内置 password/token/authorization/cookie 等字段外的业务敏感字段
+    sensitive_fields: []
 
 # 环境配置
 # 占位符语法: ${ENV_VAR:默认值},环境变量未设置时使用冒号后的默认值

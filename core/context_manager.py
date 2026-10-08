@@ -1,5 +1,7 @@
 import re
 from utils.logger import Logger
+from utils.exceptions import ContextVariableError
+from utils.sanitizer import sanitize_data
 
 # 占位符:支持 ${key} 与 ${context.key} 两种写法
 PLACEHOLDER_PATTERN = re.compile(r"\$\{(\w+(?:\.\w+)*)\}")
@@ -27,7 +29,8 @@ class TestContext:
             value: 值
         """
         self._data[key] = value
-        self.logger.debug(f"上下文写入: {key} = {value}")
+        shown = sanitize_data({key: value})[key]
+        self.logger.debug(f"上下文写入: {key} = {shown}")
 
     def get(self, key: str, default=None):
         """
@@ -47,7 +50,7 @@ class TestContext:
         渲染含 ${key} 占位符的模板,支持字符串/字典/列表递归
 
         整串恰为一个占位符时保留原始类型(如 user_id 保持 int),
-        嵌入字符串时转为 str;未命中的占位符原样保留。
+        嵌入字符串时转为 str;未命中的占位符立即报错。
 
         Args:
             template: 待渲染的模板
@@ -66,19 +69,20 @@ class TestContext:
     def _render_str(self, text: str):
         match = PLACEHOLDER_PATTERN.fullmatch(text)
         if match:
-            value = self._lookup(match.group(1))
-            return value if value is not None else text
+            return self._lookup(match.group(1))
 
         def replacer(m):
             value = self._lookup(m.group(1))
-            return str(value) if value is not None else m.group(0)
+            return str(value)
 
         return PLACEHOLDER_PATTERN.sub(replacer, text)
 
     def _lookup(self, key: str):
         if key.startswith("context."):
             key = key[len("context."):]
-        return self._data.get(key)
+        if key not in self._data:
+            raise ContextVariableError(key)
+        return self._data[key]
 
     def clear(self):
         """清空上下文"""

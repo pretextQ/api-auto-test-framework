@@ -108,7 +108,7 @@ user_id: "${context.user_id}"
 description: "order-${order_id}"
 ```
 
-完整占位符会保留值的原始类型，例如整数用户 ID 不会变为字符串。当前缺失值会保留原占位符；后续版本计划改为可配置的快速失败。
+完整占位符会保留值的原始类型，例如整数用户 ID 不会变为字符串。缺失变量会抛出 `ContextVariableError`，阻止带有未解析占位符的请求发往服务端。
 
 ### 3.5 统一用例执行
 
@@ -120,8 +120,8 @@ description: "order-${order_id}"
   → 校验 HTTP 状态码
   → 校验业务码
   → 校验 JSONPath
-  → 校验数据库
   → 提取响应字段到上下文
+  → 校验数据库
 ```
 
 统一执行入口保证 YAML 字段在不同业务模块中语义一致，并集中生成 Allure 步骤与附件。
@@ -134,9 +134,9 @@ description: "order-${order_id}"
 
 ### 3.7 报告与通知
 
-Allure 记录请求、响应和断言步骤。`pytest_sessionfinish` 汇总 Pytest 结果，在设置 `FEISHU_WEBHOOK` 时发送飞书卡片；未配置时静默跳过。
+Allure 记录请求、响应和断言步骤，并写入不含凭据的环境信息。附件写入前会递归脱敏密码、Token、Authorization、Cookie、JWT 以及配置的业务敏感字段。`pytest_sessionfinish` 汇总 passed、failed、error 和 skipped，在设置 `FEISHU_WEBHOOK` 时发送飞书卡片；未配置时静默跳过。
 
-接入真实环境前必须对请求头、密码、Token、Cookie 和个人数据进行脱敏。报告是测试产物，不应被视为天然安全。
+接入真实环境时应通过 `reporting.sensitive_fields` 补充业务敏感字段，并持续检查报告产物。报告是测试产物，不应被视为天然安全。
 
 ## 4. YAML 用例模型
 
@@ -184,8 +184,9 @@ test_cases:
 | `request.params` | 否 | 查询参数 |
 | `expected.status_code` | 是 | HTTP 状态码期望值 |
 | `expected.business_code` | 否 | 统一响应包中的 `code` |
-| `validation.jsonpath` | 否 | JSONPath 命中及值校验 |
+| `validation.jsonpath` | 否 | 单个对象或对象列表，执行 JSONPath 命中及值校验 |
 | `validation.database` | 否 | 单条数据库记录字段校验 |
+| `validation.response_time_ms` | 否 | 响应耗时上限，单位为毫秒 |
 | `extract` | 否 | JSONPath 到上下文键的映射 |
 
 `validation.jsonpath.value: null` 表示只校验路径存在，不比较值。
@@ -199,9 +200,11 @@ test_cases:
 | `auth_client` | session | 登录并配置 Bearer Token |
 | `chain_context` | session | 保存当前链路的 token、user_id、order_id |
 | `db_helper` | session | 复用数据库连接并在结束时关闭 |
-| `reset_test_data` | session/autouse | 执行前重置演示订单与库存 |
+| `allure_environment` | session/autouse | 写入环境名称、API 地址和运行时版本 |
+| `order_sandbox` | function | 记录并清理本测试创建的订单，恢复商品库存 |
+| `created_order` | function | 为订单查询用例创建可自动回收的前置数据 |
 
-会话级上下文适合展示跨用例参数传递，但带来顺序和并行限制。长期设计应让普通用例独立，把真正的端到端链路放在单个场景中完成。
+会话级上下文保留登录态复用；订单数据由 function 级 fixture 创建和清理，因此创建、查询用例不再依赖文件顺序。共享数据库下的多 worker 并行仍需单独验证。
 
 ## 6. 被测演示服务
 
@@ -233,7 +236,7 @@ test_cases:
 
 演示服务初始化 `users`、`products` 和 `orders` 三张表，并写入测试用户与商品。数据库默认映射到宿主机 `3307`，避免与常见的本地 `3306` 冲突。
 
-当前订单库存逻辑是“读取后更新”，尚未提供生产级并发保护；设计改进见[升级路线图](../../升级计划书.md)。
+订单库存通过带 `stock >= quantity` 条件的单条 UPDATE 原子扣减，并检查受影响行数；失败事务不会插入订单。
 
 ## 7. 运行拓扑
 
@@ -295,13 +298,10 @@ GitHub Actions 在 push、pull request、工作日定时任务和手动触发时
 
 | 问题 | 影响 | 计划 |
 |------|------|------|
-| 跨用例会话上下文依赖顺序 | 单测选择、随机顺序、并行执行不稳定 | 改为 fixture 造数和场景内链路 |
-| 演示接口资源归属检查不完整 | 存在越权演示缺陷 | 强制使用 Token 主体并补权限测试 |
-| 库存扣减非原子 | 并发下单可能超卖 | 条件更新或行锁 |
-| Allure 附件未脱敏 | 可能泄露密码和 Token | 统一递归脱敏 |
-| 通知未正确合并 error | CI 错误可能误报成功 | 重构结果汇总模型 |
-| YAML 仅做基础结构校验 | 错误可能到运行阶段才暴露 | 引入 schema 校验 |
-| 依赖未锁定 | 不同时间安装结果可能不同 | 增加 constraints 或锁文件 |
+| 多 worker 共享数据库尚未验证 | xdist 并行时可能相互影响 | 引入 worker 级数据命名空间并跑集成验证 |
+| 密码哈希与默认 JWT 密钥仅供演示 | 不满足生产安全要求 | 生产接入时使用专用身份系统和密钥管理 |
+| 仅固定直接依赖 | 传递依赖仍可能漂移 | 生成带哈希的完整锁文件 |
+| 镜像 digest 需要人工升级 | 长期不更新会错过安全补丁 | 结合 Dependabot 提示定期验证新 digest |
 
 路线图与验收标准见[升级路线图](../../升级计划书.md)。
 

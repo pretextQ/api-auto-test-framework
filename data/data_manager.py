@@ -3,6 +3,9 @@ from pathlib import Path
 from utils.logger import Logger
 
 
+ALLOWED_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
+
+
 class DataManager:
     """测试数据管理器:YAML测试数据文件的唯一读取入口"""
 
@@ -26,19 +29,99 @@ class DataManager:
         with open(file_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
 
+        if not isinstance(data, dict):
+            raise ValueError("测试数据根节点必须是对象")
         cases = data.get("test_cases", [])
+        if not isinstance(cases, list):
+            raise ValueError("test_cases 必须是列表")
         self._validate_cases(cases)
         self.logger.info(f"已加载 {len(cases)} 条测试用例")
 
         return cases
 
     def _validate_cases(self, cases: list):
-        """校验用例基础结构"""
+        """校验用例结构，并一次性报告全部错误。"""
+        errors = []
+        seen_ids = set()
         for i, case in enumerate(cases):
-            if "case_id" not in case:
-                raise ValueError(f"用例 {i} 缺少 case_id 字段")
-            if "request" not in case:
-                raise ValueError(f"用例 {case.get('case_id', i)} 缺少 request 字段")
+            location = f"用例[{i}]"
+            if not isinstance(case, dict):
+                errors.append(f"{location} 必须是对象")
+                continue
+
+            case_id = case.get("case_id")
+            if not isinstance(case_id, str) or not case_id.strip():
+                errors.append(f"{location} 缺少有效的 case_id")
+                case_id = str(case_id or i)
+            elif case_id in seen_ids:
+                errors.append(f"用例 {case_id} 的 case_id 重复")
+            else:
+                seen_ids.add(case_id)
+
+            request = case.get("request")
+            if not isinstance(request, dict):
+                errors.append(f"用例 {case_id} 缺少有效的 request 对象")
+            else:
+                method = request.get("method")
+                if not isinstance(method, str) or method.upper() not in ALLOWED_METHODS:
+                    errors.append(f"用例 {case_id} 的 request.method 无效: {method}")
+                url = request.get("url")
+                if not isinstance(url, str) or not url.strip():
+                    errors.append(f"用例 {case_id} 缺少有效的 request.url")
+
+            expected = case.get("expected")
+            if not isinstance(expected, dict):
+                errors.append(f"用例 {case_id} 缺少有效的 expected 对象")
+            elif not isinstance(expected.get("status_code"), int):
+                errors.append(f"用例 {case_id} 缺少整数 expected.status_code")
+
+            validation = case.get("validation", {})
+            if not isinstance(validation, dict):
+                errors.append(f"用例 {case_id} 的 validation 必须是对象")
+                continue
+
+            jsonpath = validation.get("jsonpath")
+            if jsonpath is not None:
+                specs = jsonpath if isinstance(jsonpath, list) else [jsonpath]
+                if not specs:
+                    errors.append(f"用例 {case_id} 的 validation.jsonpath 不能为空列表")
+                for spec in specs:
+                    if (
+                        not isinstance(spec, dict)
+                        or not isinstance(spec.get("expr"), str)
+                        or not spec["expr"].strip()
+                    ):
+                        errors.append(f"用例 {case_id} 的 validation.jsonpath 缺少有效 expr")
+
+            response_time_ms = validation.get("response_time_ms")
+            if response_time_ms is not None and (
+                not isinstance(response_time_ms, (int, float)) or response_time_ms <= 0
+            ):
+                errors.append(f"用例 {case_id} 的 validation.response_time_ms 必须为正数")
+
+            database = validation.get("database")
+            if database is not None:
+                if not isinstance(database, dict):
+                    errors.append(f"用例 {case_id} 的 validation.database 必须是对象")
+                else:
+                    for key in ("table", "conditions", "expected"):
+                        if key not in database:
+                            errors.append(f"用例 {case_id} 的 validation.database 缺少 {key}")
+                    if "conditions" in database and not isinstance(database["conditions"], dict):
+                        errors.append(f"用例 {case_id} 的 database.conditions 必须是对象")
+                    if "expected" in database and not isinstance(database["expected"], dict):
+                        errors.append(f"用例 {case_id} 的 database.expected 必须是对象")
+
+            extract = case.get("extract")
+            if extract is not None and (
+                not isinstance(extract, dict)
+                or not all(isinstance(k, str) and isinstance(v, str) for k, v in extract.items())
+            ):
+                errors.append(f"用例 {case_id} 的 extract 必须是字符串映射")
+
+        if errors:
+            details = "\n- ".join(errors)
+            raise ValueError(f"测试数据校验失败:\n- {details}")
 
     def get_test_cases(self, feature: str = None, story: str = None) -> list:
         """

@@ -36,7 +36,9 @@ class FeishuNotifier:
         return timestamp, sign
 
     def send_test_result(self, total: int, passed: int, failed: int,
-                         skipped: int, duration: float = None, failures: list = None):
+                         skipped: int, errors: int = 0, duration: float = None,
+                         failures: list = None, run_url: str = None,
+                         report_url: str = None):
         """
         发送测试结果
         
@@ -45,15 +47,18 @@ class FeishuNotifier:
             passed: 通过数
             failed: 失败数
             skipped: 跳过数
+            errors: setup/teardown等执行错误数
             duration: 执行时长（秒）
             failures: 失败用例列表
+            run_url: CI执行详情地址
+            report_url: Allure报告地址
         """
-        status = "✅ 测试通过" if failed == 0 else "❌ 测试失败"
+        status = "✅ 测试通过" if failed == 0 and errors == 0 else "❌ 测试失败"
         
         content = f"""
 **测试执行结果**
 状态: {status}
-总计: {total} | 通过: {passed} | 失败: {failed} | 跳过: {skipped}
+总计: {total} | 通过: {passed} | 失败: {failed} | 错误: {errors} | 跳过: {skipped}
 """
         if duration:
             content += f"耗时: {duration:.2f}秒\n"
@@ -64,6 +69,11 @@ class FeishuNotifier:
                 content += f"- {failure}\n"
             if len(failures) > 5:
                 content += f"... 等 {len(failures) - 5} 个\n"
+
+        if run_url:
+            content += f"\n[查看 CI 执行]({run_url})"
+        if report_url:
+            content += f" | [查看 Allure 报告]({report_url})"
         
         self._send_message(content)
 

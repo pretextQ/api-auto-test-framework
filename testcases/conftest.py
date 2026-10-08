@@ -1,5 +1,7 @@
 import os
+import platform
 import time
+from pathlib import Path
 
 import pytest
 from api.user_api import UserApi
@@ -21,13 +23,32 @@ def config(request):
     return ConfigManager(env=request.config.getoption("--env"))
 
 
+@pytest.fixture(scope="session", autouse=True)
+def allure_environment(config, request):
+    """向Allure结果目录写入不含凭据的环境信息。"""
+    report_dir = getattr(request.config.option, "allure_report_dir", None)
+    if not report_dir:
+        return
+    output = Path(report_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    properties = {
+        "Environment": config.current_env,
+        "API.BaseURL": config.get("base_url"),
+        "Python": platform.python_version(),
+        "Platform": platform.platform(),
+    }
+    content = "\n".join(f"{key}={value}" for key, value in properties.items()) + "\n"
+    (output / "environment.properties").write_text(content, encoding="utf-8")
+
+
 @pytest.fixture(scope="session")
 def api_client(config):
     """未鉴权业务API对象"""
     return UserApi(
         base_url=config.get("base_url"),
         timeout=config.get("timeout"),
-        retries=config.get("retries")
+        retries=config.get("retries"),
+        sensitive_fields=config.get("reporting.sensitive_fields", [])
     )
 
 
@@ -47,7 +68,8 @@ def auth_client(config, chain_context):
     client = UserApi(
         base_url=config.get("base_url"),
         timeout=config.get("timeout"),
-        retries=config.get("retries")
+        retries=config.get("retries"),
+        sensitive_fields=config.get("reporting.sensitive_fields", [])
     )
     token = chain_context.get("token")
     if not token:
@@ -67,12 +89,46 @@ def db_helper(config):
     helper.close()
 
 
-@pytest.fixture(scope="session", autouse=True)
-def reset_test_data(db_helper):
-    """会话开始重置被测数据,保证执行结果可重复"""
-    db_helper.execute_update("DELETE FROM orders")
-    db_helper.execute_update("UPDATE products SET stock = 100 WHERE product_id = 1001")
-    db_helper.execute_update("UPDATE products SET stock = 50 WHERE product_id = 1002")
+@pytest.fixture
+def order_sandbox(db_helper, auth_client, chain_context):
+    """隔离单条订单测试，只清理本测试创建的订单并恢复相关库存。"""
+    user_id = chain_context.get("user_id")
+    before_rows = db_helper.execute_query(
+        "SELECT order_id FROM orders WHERE user_id = %s", (user_id,)
+    )
+    before_ids = {row["order_id"] for row in before_rows}
+    product = db_helper.fetch_one("products", {"product_id": 1002})
+    original_stock = product["stock"]
+    if original_stock < 2:
+        db_helper.execute_update(
+            "UPDATE products SET stock = %s WHERE product_id = %s", (50, 1002)
+        )
+
+    yield
+
+    after_rows = db_helper.execute_query(
+        "SELECT order_id FROM orders WHERE user_id = %s", (user_id,)
+    )
+    new_ids = [row["order_id"] for row in after_rows if row["order_id"] not in before_ids]
+    for order_id in new_ids:
+        db_helper.execute_update("DELETE FROM orders WHERE order_id = %s", (order_id,))
+    db_helper.execute_update(
+        "UPDATE products SET stock = %s WHERE product_id = %s", (original_stock, 1002)
+    )
+
+
+@pytest.fixture
+def created_order(auth_client, chain_context, order_sandbox):
+    """为查询类测试创建一条可自动回收的订单。"""
+    response = auth_client.post("/api/orders", json={
+        "user_id": chain_context.get("user_id"),
+        "product_id": 1002,
+        "quantity": 2,
+    })
+    result = response.json()
+    if response.status_code != 200 or result.get("code") != 0:
+        pytest.fail(f"订单前置数据创建失败: {result}")
+    return result["data"]
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -90,9 +146,13 @@ def pytest_sessionfinish(session, exitstatus):
     total = passed + failed + skipped + error
 
     failures = [report.nodeid for report in stats.get("failed", [])]
+    failures.extend(report.nodeid for report in stats.get("error", []))
 
-    FeishuNotifier(webhook).send_test_result(
+    FeishuNotifier(webhook, secret=os.getenv("FEISHU_SECRET")).send_test_result(
         total=total, passed=passed, failed=failed, skipped=skipped,
+        errors=error,
         duration=round(time.time() - _START_TIME, 2),
-        failures=failures
+        failures=failures,
+        run_url=os.getenv("CI_RUN_URL"),
+        report_url=os.getenv("ALLURE_REPORT_URL")
     )

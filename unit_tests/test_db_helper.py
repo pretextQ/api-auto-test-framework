@@ -32,6 +32,7 @@ class FakeConnection:
         self.open = True
         self.committed = 0
         self.rolled_back = 0
+        self.ping_calls = 0
 
     def cursor(self):
         return self._cursor
@@ -44,6 +45,9 @@ class FakeConnection:
 
     def close(self):
         self.open = False
+
+    def ping(self, reconnect=False):
+        self.ping_calls += 1
 
 
 @pytest.fixture
@@ -66,11 +70,12 @@ class TestDatabaseHelper:
     def test_fetch_one_builds_sql_and_returns_row(self, install_fake):
         row = {"user_id": 1, "status": "active"}
         cursor = FakeCursor(rows=[row])
-        install_fake(cursor)
+        conn = install_fake(cursor)
 
         result = make_helper().fetch_one("users", {"username": "testuser"})
 
         assert result == row
+        assert conn.committed == 1
         sql, params = cursor.executed[0]
         assert sql == "SELECT * FROM users WHERE username = %s LIMIT 1"
         assert params == ("testuser",)
@@ -107,6 +112,12 @@ class TestDatabaseHelper:
         assert conn.rolled_back == 1
         assert conn.committed == 0
 
+    def test_execute_query_rolls_back_on_error(self, install_fake):
+        conn = install_fake(FakeCursor(error=RuntimeError("query failed")))
+        with pytest.raises(RuntimeError):
+            make_helper().execute_query("SELECT 1")
+        assert conn.rolled_back == 1
+
     def test_close_is_idempotent(self, install_fake):
         cursor = FakeCursor(rows=[])
         conn = install_fake(cursor)
@@ -117,3 +128,27 @@ class TestDatabaseHelper:
         helper.close()
 
         assert conn.open is False
+
+    @pytest.mark.parametrize("table", ["orders; DROP TABLE users", "orders-name", ""])
+    def test_fetch_one_rejects_unsafe_table_names(self, table):
+        with pytest.raises(ValueError, match="非法表名"):
+            make_helper().fetch_one(table, {"id": 1})
+
+    def test_fetch_one_rejects_unsafe_column_names(self):
+        with pytest.raises(ValueError, match="非法列名"):
+            make_helper().fetch_one("orders", {"id OR 1=1": 1})
+
+    def test_fetch_one_rejects_empty_conditions(self):
+        with pytest.raises(ValueError, match="非空"):
+            make_helper().fetch_one("orders", {})
+
+    def test_reuses_live_connection_after_ping(self, install_fake):
+        conn = install_fake(FakeCursor(rows=[]))
+        helper = make_helper()
+        helper.fetch_one("orders", {"id": 1})
+        helper.fetch_one("orders", {"id": 2})
+        assert conn.ping_calls == 1
+
+    def test_validate_rejects_empty_expected_before_query(self):
+        with pytest.raises(ValueError, match="expected"):
+            make_helper().validate("orders", {"id": 1}, {})

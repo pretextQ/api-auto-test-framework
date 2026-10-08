@@ -2,12 +2,14 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from utils.logger import Logger
+from utils.sanitizer import sanitize_data
 
 
 class HttpClient:
     """HTTP客户端基类，封装Requests库，提供统一的HTTP请求能力"""
 
-    def __init__(self, base_url: str, timeout: int = 30, retries: int = 3, headers: dict = None):
+    def __init__(self, base_url: str, timeout: int = 30, retries: int = 3,
+                 headers: dict = None, sensitive_fields=None):
         """
         初始化HTTP客户端
         
@@ -16,9 +18,11 @@ class HttpClient:
             timeout: 请求超时时间（秒）
             retries: 重试次数
             headers: 默认请求头
+            sensitive_fields: 报告中需要额外脱敏的字段名
         """
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self.sensitive_fields = tuple(sensitive_fields or ())
         self.logger = Logger.get_logger(self.__class__.__name__)
         
         self.session = requests.Session()
@@ -58,7 +62,8 @@ class HttpClient:
         full_url = self._build_url(url)
         kwargs.setdefault("timeout", self.timeout)
         
-        self.logger.info(f"[{method.upper()}] {full_url}")
+        safe_url = sanitize_data(full_url, self.sensitive_fields)
+        self.logger.info(f"[{method.upper()}] {safe_url}")
         
         try:
             response = self.session.request(method, full_url, **kwargs)

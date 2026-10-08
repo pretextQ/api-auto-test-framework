@@ -10,10 +10,11 @@
 
 - **分层架构**:`api` 接口封装 / `core` 驱动核心 / `data` 配置数据 / `utils` 工具,职责单一
 - **数据驱动**:YAML 用例在收集阶段按模块过滤注入,一条方法 = N 条用例,数据与代码完全解耦
-- **链路传参**:用例通过 `extract` 段按 JSONPath 提取响应字段写入上下文,后续用例以 `${context.user_id}` 占位符引用,打通长链路动态参数依赖
+- **链路传参**:用例通过 `extract` 段按 JSONPath 提取响应字段写入上下文,后续用例以 `${context.user_id}` 占位符引用;缺失变量在请求发出前快速失败
 - **双重校验**:JSONPath 响应断言 + 业务码断言 + MySQL 落库断言
 - **安全重试**:网络重试仅作用于幂等方法,POST 不自动重试,避免重复下单类脏数据
-- **框架自测**:核心工具层(渲染/JSONPath/配置/数据加载/DB/通知)单元测试全覆盖
+- **安全与隔离**:报告自动脱敏、资源归属校验、库存原子扣减,订单用例按测试造数并回收
+- **框架自测**:72 条单元测试覆盖渲染、配置、数据模型、DB、通知、脱敏和演示服务安全边界
 - **工程化闭环**:Docker Compose + GitHub Actions 定时巡检 + Allure 报告发布至 GitHub Pages + 飞书机器人推送结果
 
 ## 架构
@@ -77,7 +78,7 @@ docker compose run --rm test-runner   # 或容器内执行
 ### 方式二:本地运行
 
 ```bash
-pip install -r requirements.txt -r demo_app/requirements.txt
+pip install -c constraints.txt -r requirements.txt -r demo_app/requirements.txt
 docker compose up -d mysql demo-app    # 仅拉起依赖
 uvicorn demo_app.main:app --port 8000  # 或直接运行演示服务
 pytest
@@ -129,7 +130,8 @@ pytest --alluredir=reports/allure && allure serve reports/allure
 | API 对象层 + 数据驱动并存 | 数据驱动覆盖参数化业务断言;API 对象层负责前置登录、造数等流程编排 |
 | 整串占位符渲染保留原始类型 | `${context.user_id}` 直传 int,SQL/JSON 不会出现 `"1001"` 类型歧义 |
 | POST 不自动重试 | 重试只对幂等方法生效,防止创建订单类接口因重试产生重复数据 |
-| 用例开始前重置种子数据 | DELETE orders + 复位库存,保证任意重复执行结果一致 |
+| 订单数据按用例创建和回收 | 避免全表清理与执行顺序依赖,单条用例可独立运行 |
+| 报告写入前递归脱敏 | 防止密码、Token、Cookie 等进入 Allure 与 Pages |
 | 内置被测演示服务 | 框架克隆即可运行,不依赖外部环境;同时演示落库断言的真实价值 |
 
 ## CI/CD

@@ -46,7 +46,7 @@ class ConfigManager:
         if not env_config:
             raise ValueError(f"环境 '{self._env}' 配置不存在")
 
-        merged = {**common_config, **env_config}
+        merged = self._deep_merge(common_config, env_config)
         resolved = self._resolve_env_vars(merged)
 
         self.logger.info(f"已加载环境配置: {self._env}")
@@ -54,15 +54,27 @@ class ConfigManager:
 
     def _resolve_env_vars(self, config: dict) -> dict:
         """解析配置中的环境变量占位符"""
-        resolved = {}
-        for key, value in config.items():
-            if isinstance(value, dict):
-                resolved[key] = self._resolve_env_vars(value)
-            elif isinstance(value, str):
-                resolved[key] = self._replace_env_var(value)
+        return {key: self._resolve_value(value) for key, value in config.items()}
+
+    def _resolve_value(self, value):
+        if isinstance(value, dict):
+            return self._resolve_env_vars(value)
+        if isinstance(value, list):
+            return [self._resolve_value(item) for item in value]
+        if isinstance(value, str):
+            return self._replace_env_var(value)
+        return value
+
+    @classmethod
+    def _deep_merge(cls, base: dict, override: dict) -> dict:
+        """递归合并配置，环境值覆盖通用值但保留未覆盖的嵌套项。"""
+        merged = dict(base)
+        for key, value in override.items():
+            if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                merged[key] = cls._deep_merge(merged[key], value)
             else:
-                resolved[key] = value
-        return resolved
+                merged[key] = value
+        return merged
 
     def _replace_env_var(self, value: str) -> str:
         """替换字符串中的环境变量占位符,未设置时使用默认值"""

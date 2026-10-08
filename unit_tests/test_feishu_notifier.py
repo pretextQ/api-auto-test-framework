@@ -66,3 +66,22 @@ class TestFeishuNotifier:
         FeishuNotifier("https://open.feishu.cn/hook/x").send_test_result(
             total=1, passed=1, failed=0, skipped=0
         )
+
+    def test_execution_error_marks_result_failed(self, captured):
+        FeishuNotifier("https://open.feishu.cn/hook/x").send_test_result(
+            total=1, passed=0, failed=0, errors=1, skipped=0,
+            failures=["test_setup"],
+        )
+        content = captured["payload"]["card"]["elements"][0]["content"]
+        assert "❌ 测试失败" in content
+        assert "错误: 1" in content
+
+    def test_ci_and_report_links_are_included(self, captured):
+        FeishuNotifier("https://open.feishu.cn/hook/x").send_test_result(
+            total=1, passed=1, failed=0, skipped=0,
+            run_url="https://ci.example/run/1",
+            report_url="https://report.example/1",
+        )
+        content = captured["payload"]["card"]["elements"][0]["content"]
+        assert "https://ci.example/run/1" in content
+        assert "https://report.example/1" in content

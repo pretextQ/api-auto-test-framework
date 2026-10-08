@@ -3,6 +3,7 @@ import json
 import allure
 
 from utils.jsonpath_extractor import JsonPathExtractor
+from utils.sanitizer import sanitize_data
 
 
 class TestCaseBase:
@@ -36,20 +37,27 @@ class TestCaseBase:
                 self.assert_business_code(resp, expected["business_code"])
 
         validation = case.get("validation", {})
-        if "jsonpath" in validation:
-            with allure.step("校验响应数据"):
-                jp = validation["jsonpath"]
-                self.assert_jsonpath(resp.json(), jp["expr"], jp.get("value"))
+        jsonpath_specs = validation.get("jsonpath")
+        if jsonpath_specs:
+            if isinstance(jsonpath_specs, dict):
+                jsonpath_specs = [jsonpath_specs]
+            for jp in jsonpath_specs:
+                with allure.step(f"校验响应数据: {jp['expr']}"):
+                    self.assert_jsonpath(resp.json(), jp["expr"], jp.get("value"))
+
+        if "response_time_ms" in validation:
+            with allure.step("校验响应时间"):
+                self.assert_response_time(resp, validation["response_time_ms"])
+
+        if resp.ok and expected.get("business_code", 0) == 0:
+            with allure.step("提取链路参数写入上下文"):
+                self.extract_response(resp.json(), case.get("extract"), context)
 
         if "database" in validation:
             with allure.step("校验数据库落库"):
                 db = validation["database"]
                 conditions = context.render(db["conditions"]) if context else db["conditions"]
                 self.assert_database(db_helper, db["table"], conditions, db["expected"])
-
-        if resp.ok:
-            with allure.step("提取链路参数写入上下文"):
-                self.extract_response(resp.json(), case.get("extract"), context)
 
         return resp
 
@@ -142,6 +150,15 @@ class TestCaseBase:
                 )
 
     @staticmethod
+    def assert_response_time(resp, expected_ms: float):
+        """断言请求耗时不超过指定毫秒数。"""
+        actual_ms = resp.elapsed.total_seconds() * 1000
+        if actual_ms > expected_ms:
+            raise AssertionError(
+                f"响应时间超限: 期望不超过 {expected_ms}ms, 实际 {actual_ms:.2f}ms"
+            )
+
+    @staticmethod
     def extract_response(resp_json, extract_spec: dict, context):
         """
         按用例的 extract 段提取响应字段写入上下文
@@ -181,15 +198,27 @@ class TestCaseBase:
             kwargs["json"] = render(request["data"])
         if request.get("params") is not None:
             kwargs["params"] = render(request["params"])
+        if request.get("headers") is not None:
+            kwargs["headers"] = render(request["headers"])
 
         with allure.step(f"{method} {url}"):
-            shown = {"method": method, "url": url}
+            headers = dict(api_client.session.headers)
+            headers.update(kwargs.get("headers", {}))
+            shown = {
+                "method": method,
+                "url": url,
+                "headers": headers,
+            }
             if "json" in kwargs:
                 shown["data"] = kwargs["json"]
             if "params" in kwargs:
                 shown["params"] = kwargs["params"]
+            sensitive_fields = getattr(api_client, "sensitive_fields", ())
             allure.attach(
-                json.dumps(shown, ensure_ascii=False, indent=2, default=str),
+                json.dumps(
+                    sanitize_data(shown, sensitive_fields),
+                    ensure_ascii=False, indent=2, default=str
+                ),
                 name="请求", attachment_type=allure.attachment_type.JSON
             )
             resp = api_client.request(method, url, **kwargs)
@@ -198,7 +227,10 @@ class TestCaseBase:
             except Exception:
                 body = resp.text
             allure.attach(
-                json.dumps({"status_code": resp.status_code, "body": body},
+                json.dumps(sanitize_data(
+                    {"status_code": resp.status_code, "body": body},
+                    sensitive_fields
+                ),
                            ensure_ascii=False, indent=2, default=str),
                 name="响应", attachment_type=allure.attachment_type.JSON
             )

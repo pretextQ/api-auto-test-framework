@@ -87,7 +87,7 @@ test_cases:
       database:
         table: "orders"
         conditions:
-          user_id: "${context.user_id}"
+          order_id: "${context.order_id}"
         expected:
           status: "created"
           product_id: 1002
@@ -109,7 +109,7 @@ test_cases:
     validation:
       jsonpath:
         expr: "$.data.total"
-        value: 1
+        value: null
 
   - case_id: "TC006"
     name: "商品库存与落库校验"
