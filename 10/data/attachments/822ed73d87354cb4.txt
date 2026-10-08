@@ -1,0 +1,2 @@
+WARNING  ConfigManager:config_manager.py:88 环境变量 TEST_PASSWORD 未设置且无默认值
+INFO     ConfigManager:config_manager.py:52 已加载环境配置: test
