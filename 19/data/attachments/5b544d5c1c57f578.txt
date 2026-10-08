@@ -1,5 +1,0 @@
-INFO     DatabaseHelper:db_helper.py:49 数据库连接已建立
-DEBUG    DatabaseHelper:db_helper.py:71 执行SQL: SELECT * FROM orders WHERE id = %s LIMIT 1, 参数: (1,)
-DEBUG    DatabaseHelper:db_helper.py:76 查询返回 0 条记录
-DEBUG    DatabaseHelper:db_helper.py:71 执行SQL: SELECT * FROM orders WHERE id = %s LIMIT 1, 参数: (2,)
-DEBUG    DatabaseHelper:db_helper.py:76 查询返回 0 条记录

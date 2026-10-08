@@ -1,3 +1,0 @@
-INFO     DatabaseHelper:db_helper.py:49 数据库连接已建立
-DEBUG    DatabaseHelper:db_helper.py:97 执行SQL: UPDATE products SET stock = %s, 参数: (10,)
-DEBUG    DatabaseHelper:db_helper.py:100 更新影响 None 行
