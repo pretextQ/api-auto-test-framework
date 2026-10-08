@@ -6,6 +6,6 @@ jsonpath-ng>=1.8.0
 PyMySQL>=1.0.0
 cryptography>=43.0.0
 allure-pytest>=2.13.2
-pytest-cov>=4.1.0
+pytest-cov>=7.1.0
 
 # 被测演示服务(demo_app)依赖见 demo_app/requirements.txt
