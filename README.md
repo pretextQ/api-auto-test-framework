@@ -1,7 +1,7 @@
 # 基于Pytest的微服务接口自动化测试框架
 
 ![CI](https://github.com/pretextQ/api-auto-test-framework/actions/workflows/test.yml/badge.svg)
-![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![Python](https://img.shields.io/badge/python-3.11-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 一个**开箱即可运行**的接口自动化测试框架:自带 FastAPI 被测演示服务与 MySQL,`docker compose up` 一键拉起完整测试环境,覆盖"登录 → 创建订单 → 查询订单 → 库存校验"核心业务链路,演示 YAML 数据驱动、链路上下文传参、接口/落库双重校验与 CI 自动化闭环。
@@ -75,22 +75,26 @@ pytest                          # 宿主机执行(默认连 localhost:8000 / loc
 docker compose run --rm test-runner   # 或容器内执行
 ```
 
-### 方式二:本地运行
+### 方式二:使用 uv 隔离本地环境
+
+在项目根目录执行以下命令。uv 会创建 Python 3.11 的 `.venv` 并使用该环境运行命令，无需手动激活。已有其他版本的 `.venv` 时，先备份再创建；依赖由 requirements 与 constraints 文件管理。
 
 ```bash
-pip install -c constraints.txt -r requirements.txt -r demo_app/requirements.txt
+uv venv --python 3.11 .venv
+uv pip install -c constraints.txt -r requirements.txt -r demo_app/requirements.txt
+uv run python --version
+uv run pytest -m unit                 # 无需启动外部服务
 docker compose up -d mysql demo-app    # 仅拉起依赖
-uvicorn demo_app.main:app --port 8000  # 或直接运行演示服务
-pytest
+uv run pytest
 ```
 
 常用命令:
 
 ```bash
-pytest -m smoke                # 只跑冒烟链路
-pytest -m unit                 # 只跑框架单元测试
-pytest --env=dev               # 指定环境(TEST_ENV 环境变量亦可)
-pytest --alluredir=reports/allure && allure serve reports/allure
+uv run pytest -m smoke                # 只跑冒烟链路
+uv run pytest -m unit                 # 只跑框架单元测试
+uv run pytest --env=dev               # 指定环境(TEST_ENV 环境变量亦可)
+uv run pytest --alluredir=reports/allure && allure serve reports/allure
 ```
 
 无需任何手工配置:数据库连接、服务地址均带默认值(`config/env_config.yaml` 中 `${VAR:默认值}`),需要覆盖时注入同名环境变量即可。

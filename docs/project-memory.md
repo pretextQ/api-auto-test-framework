@@ -22,7 +22,7 @@ YAML 用例 → Pytest 参数化 → HTTP 请求 → 响应/业务码断言
 
 | 领域 | 实现 |
 |------|------|
-| 语言与测试 | Python 3.9+、Pytest |
+| 语言与测试 | Python 3.11、Pytest |
 | HTTP | Requests、Session、幂等请求重试 |
 | 数据驱动 | YAML、收集阶段参数化 |
 | 数据提取 | jsonpath-ng |

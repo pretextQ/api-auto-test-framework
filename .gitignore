@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 .venv/
+.venv-py314-backup/
 venv/
 logs/
 reports/

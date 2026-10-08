@@ -23,7 +23,7 @@
 
 ## 当前项目快照
 
-- Python 3.9+，测试框架为 Pytest；
+- Python 3.11，测试框架为 Pytest；
 - FastAPI 演示服务和 MySQL 组成可本地复现的被测系统；
 - 6 条 YAML 数据用例，加 4 条 API 对象/安全边界用例；
 - 72 条框架单元测试；
