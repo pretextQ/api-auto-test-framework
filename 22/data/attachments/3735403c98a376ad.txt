@@ -1,2 +1,0 @@
-2026-10-08 14:20:18 - DatabaseHelper - INFO - 数据库连接已建立
-2026-10-08 14:20:18 - DatabaseHelper - INFO - 数据库连接已关闭
