@@ -1,0 +1,2 @@
+2026-10-08 07:45:06 - DatabaseHelper - INFO - 数据库连接已建立
+2026-10-08 07:45:06 - DatabaseHelper - ERROR - 查询失败: query failed
