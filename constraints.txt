@@ -2,7 +2,7 @@
 pytest==8.3.5
 requests==2.32.3
 PyYAML==6.0.2
-jsonpath-ng==1.7.0
+jsonpath-ng==1.8.0
 PyMySQL==1.1.1
 cryptography==43.0.3
 allure-pytest==2.13.5
