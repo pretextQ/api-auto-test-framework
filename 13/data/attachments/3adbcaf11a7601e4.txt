@@ -1,0 +1,2 @@
+DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.data.name' 提取到 1 个结果
+DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.data.order_id' 提取到 1 个结果

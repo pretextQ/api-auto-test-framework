@@ -1,0 +1,6 @@
+DEBUG    DatabaseHelper:db_helper.py:71 执行SQL: SELECT COUNT(*) AS total FROM orders WHERE user_id = %s, 参数: (2,)
+DEBUG    DatabaseHelper:db_helper.py:76 查询返回 1 条记录
+INFO     UserApi:http_client.py:66 [POST] http://127.0.0.1:8000/api/orders
+INFO     UserApi:http_client.py:70 响应状态码: 200
+DEBUG    DatabaseHelper:db_helper.py:71 执行SQL: SELECT COUNT(*) AS total FROM orders WHERE user_id = %s, 参数: (2,)
+DEBUG    DatabaseHelper:db_helper.py:76 查询返回 1 条记录

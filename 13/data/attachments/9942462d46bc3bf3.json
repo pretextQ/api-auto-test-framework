@@ -1,0 +1,12 @@
+{
+  "status_code": 200,
+  "body": {
+    "code": 0,
+    "message": "success",
+    "data": {
+      "token": "***",
+      "user_id": 1,
+      "username": "testuser"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "status_code": 200,
+  "body": {
+    "code": 0,
+    "message": "success",
+    "data": {
+      "product_id": 1001,
+      "name": "机械键盘",
+      "price": 199.0,
+      "stock": 100,
+      "status": "on_sale"
+    }
+  }
+}

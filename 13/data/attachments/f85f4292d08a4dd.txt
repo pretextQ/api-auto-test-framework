@@ -1,0 +1,4 @@
+DEBUG    TestContext:context_manager.py:33 上下文写入: user_id = 1001
+DEBUG    TestContext:context_manager.py:33 上下文写入: token = ***
+DEBUG    TestContext:context_manager.py:33 上下文写入: order_id = ORD-1
+DEBUG    TestContext:context_manager.py:90 上下文已清空
