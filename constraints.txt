@@ -1,7 +1,7 @@
 # Python 3.9兼容的直接依赖快照；升级后需同时运行unit与smoke测试。
 pytest==8.3.5
 requests==2.32.3
-PyYAML==6.0.2
+PyYAML==6.0.3
 jsonpath-ng==1.7.0
 PyMySQL==1.1.1
 cryptography==43.0.3
