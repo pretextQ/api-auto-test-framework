@@ -1,0 +1,1 @@
+DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.data.user.id' 提取到 1 个结果

@@ -1,0 +1,18 @@
+INFO     DatabaseHelper:db_helper.py:49 数据库连接已建立
+DEBUG    DatabaseHelper:db_helper.py:71 执行SQL: SELECT order_id FROM orders WHERE user_id = %s, 参数: (1,)
+DEBUG    DatabaseHelper:db_helper.py:76 查询返回 0 条记录
+DEBUG    DatabaseHelper:db_helper.py:71 执行SQL: SELECT * FROM products WHERE product_id = %s LIMIT 1, 参数: (1002,)
+DEBUG    DatabaseHelper:db_helper.py:76 查询返回 1 条记录
+INFO     UserApi:http_client.py:66 [POST] http://127.0.0.1:8000/api/orders
+INFO     UserApi:http_client.py:70 响应状态码: 200
+DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.data.status' 提取到 1 个结果
+DEBUG    JsonPathExtractor:jsonpath_extractor.py:25 JSONPath '$.data.order_id' 提取到 1 个结果
+DEBUG    TestContext:context_manager.py:33 上下文写入: order_id = 1
+DEBUG    DatabaseHelper:db_helper.py:71 执行SQL: SELECT * FROM orders WHERE order_id = %s LIMIT 1, 参数: (1,)
+DEBUG    DatabaseHelper:db_helper.py:76 查询返回 1 条记录
+DEBUG    DatabaseHelper:db_helper.py:71 执行SQL: SELECT order_id FROM orders WHERE user_id = %s, 参数: (1,)
+DEBUG    DatabaseHelper:db_helper.py:76 查询返回 1 条记录
+DEBUG    DatabaseHelper:db_helper.py:97 执行SQL: DELETE FROM orders WHERE order_id = %s, 参数: (1,)
+DEBUG    DatabaseHelper:db_helper.py:100 更新影响 1 行
+DEBUG    DatabaseHelper:db_helper.py:97 执行SQL: UPDATE products SET stock = %s WHERE product_id = %s, 参数: (50, 1002)
+DEBUG    DatabaseHelper:db_helper.py:100 更新影响 1 行

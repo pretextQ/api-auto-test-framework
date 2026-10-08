@@ -1,0 +1,14 @@
+{
+  "method": "POST",
+  "url": "/api/login",
+  "headers": {
+    "User-Agent": "python-requests/2.34.2",
+    "Accept-Encoding": "gzip, deflate",
+    "Accept": "*/*",
+    "Connection": "keep-alive"
+  },
+  "data": {
+    "username": "testuser",
+    "password": "***"
+  }
+}
