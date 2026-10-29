@@ -1,2 +1,0 @@
-2026-10-28 15:00:12 - DatabaseHelper - INFO - 数据库连接已建立
-2026-10-28 15:00:12 - DatabaseHelper - ERROR - 更新失败: db down
